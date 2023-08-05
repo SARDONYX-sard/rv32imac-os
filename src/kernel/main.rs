@@ -4,6 +4,9 @@
 #![feature(asm_const)]
 #![feature(fn_align)]
 
+mod console;
+mod sbi;
+
 use core::{arch::asm, panic::PanicInfo};
 
 // Defined symbols by kernel.ld
@@ -25,6 +28,8 @@ fn clear_bss() {
 
 fn kernel_main() {
     clear_bss();
+    let s = "Hello World!";
+    println!("{}", s);
     loop {
         unsafe { asm!("wfi") }
     }
