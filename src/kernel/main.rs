@@ -3,6 +3,7 @@
 #![feature(naked_functions)]
 #![feature(asm_const)]
 #![feature(fn_align)]
+#![feature(panic_info_message)]
 
 use core::{arch::asm, panic::PanicInfo};
 
@@ -27,12 +28,8 @@ fn clear_bss() {
 
 fn kernel_main() {
     clear_bss();
-    let s = "Hello World!";
-    println!("{}", s);
-    println!("1 + 2 = {}, {:x}\n", 1 + 2, 0x1234abcd);
-    loop {
-        unsafe { asm!("wfi") }
-    }
+    panic!("[Kernel] booted!");
+    unreachable!()
 }
 
 #[link_section = ".text.boot"]
@@ -52,6 +49,17 @@ pub extern "C" fn boot() {
 
 /// NOTE: info is not used yet because println!
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    match info.location() {
+        Some(location) => {
+            println!(
+                "[kernel] Panicked at {}:{} {}",
+                location.file(),
+                location.line(),
+                info.message().unwrap()
+            );
+        }
+        None => println!("[kernel] Panicked: {}", info.message().unwrap()),
+    };
     loop {}
 }

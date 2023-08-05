@@ -9,7 +9,7 @@
 - [x] chapter05 boot
 - [x] chapter06 hello world
 - [x] chapter07 C std library
-- [ ] chapter08 kernel panic
+- [x] chapter08 kernel panic
 - [ ] chapter09 exception
 - [ ] chapter10 allocate memory
 - [ ] chapter11 process
