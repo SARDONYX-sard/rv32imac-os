@@ -4,10 +4,9 @@
 #![feature(asm_const)]
 #![feature(fn_align)]
 
-mod console;
-mod sbi;
-
 use core::{arch::asm, panic::PanicInfo};
+
+use kernel::println;
 
 // Defined symbols by kernel.ld
 extern "C" {
