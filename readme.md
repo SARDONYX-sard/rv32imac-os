@@ -7,7 +7,7 @@
 ## Features
 
 - [x] chapter05 boot
-- [ ] chapter06 hello world
+- [x] chapter06 hello world
 - [ ] chapter07 C std library
 - [ ] chapter08 kernel panic
 - [ ] chapter09 exception
@@ -26,3 +26,7 @@
 
 - [octox](https://github.com/o8vm/octox)
 - [rCore(My Builds version)](https://github.com/SARDONYX-sard/My-rCore-Tutorial-v3)
+
+## License
+
+GPL-3.0 license(Some of the code referenced is for GPL3.0 rCore code.)
