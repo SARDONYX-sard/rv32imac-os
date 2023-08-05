@@ -1,0 +1,6 @@
+[toolchain]
+# rustup run nightly rustc --version
+channel = "nightly"
+components = ["rust-src", "llvm-tools", "rustfmt", "clippy"]
+profile = "minimal"
+targets = ["riscv32imac-unknown-none-elf"]

@@ -1,0 +1,13 @@
+{
+  "words": [
+    "ecall",
+    "getchar",
+    "inlateout",
+    "noreturn",
+    "putchar",
+    "readfile",
+    "syscall",
+    "sysno",
+    "writefile"
+  ]
+}

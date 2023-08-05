@@ -1,0 +1,10 @@
+#  docker compose run app sh
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./:/mnt/app

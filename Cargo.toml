@@ -1,0 +1,20 @@
+[package]
+name = "OS1000line"
+edition = "2021"
+version.workspace = true
+
+[[bin]]
+name = "os"
+path = "src/kernel/main.rs"
+
+[workspace]
+package.version = "0.1.0"
+members = ["src/kernel"]
+
+[workspace.dependencies]
+# NOTE: The name of the pakage must be the name given in src/kernel/Cargo.toml
+os_1000line_kernel = { path = "src/kernel" }
+
+[dependencies]
+# NOTE: The name of the pakage must be the name given in src/kernel/Cargo.toml
+os_1000line_kernel = { workspace = true }
