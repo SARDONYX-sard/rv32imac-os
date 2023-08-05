@@ -1,13 +1,25 @@
 {
   "words": [
+    "addi",
+    "csrr",
+    "csrw",
     "ecall",
     "getchar",
     "inlateout",
     "noreturn",
     "putchar",
     "readfile",
+    "repr",
+    "riscv",
+    "scause",
+    "Sepc",
+    "sret",
+    "sscratch",
+    "stval",
+    "Stvec",
     "syscall",
     "sysno",
+    "unimp",
     "Virt",
     "writefile"
   ]

@@ -4,10 +4,12 @@
 #![feature(asm_const)]
 #![feature(fn_align)]
 #![feature(panic_info_message)]
+pub mod trap;
 
 use core::{arch::asm, panic::PanicInfo};
 
-use kernel::println;
+use kernel::{println, riscv::stvec};
+use trap::kernel_entry;
 
 // Defined symbols by kernel.ld
 extern "C" {
@@ -28,8 +30,11 @@ fn clear_bss() {
 
 fn kernel_main() {
     clear_bss();
-    panic!("[Kernel] booted!");
-    unreachable!()
+    println!("Hello World!");
+    unsafe {
+        stvec::write(kernel_entry as usize, stvec::TrapMode::Direct);
+        asm!("unimp");
+    }
 }
 
 #[link_section = ".text.boot"]

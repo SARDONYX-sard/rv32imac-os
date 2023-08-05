@@ -10,7 +10,7 @@
 - [x] chapter06 hello world
 - [x] chapter07 C std library
 - [x] chapter08 kernel panic
-- [ ] chapter09 exception
+- [x] chapter09 exception
 - [ ] chapter10 allocate memory
 - [ ] chapter11 process
 - [ ] chapter12 page table

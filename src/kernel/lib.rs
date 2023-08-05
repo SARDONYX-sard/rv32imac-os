@@ -4,6 +4,7 @@
 #![feature(fn_align)]
 
 pub mod console;
+pub mod riscv;
 pub mod sbi;
 
 /// # Parameters
