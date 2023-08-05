@@ -29,6 +29,7 @@ fn kernel_main() {
     clear_bss();
     let s = "Hello World!";
     println!("{}", s);
+    println!("1 + 2 = {}, {:x}\n", 1 + 2, 0x1234abcd);
     loop {
         unsafe { asm!("wfi") }
     }
