@@ -40,7 +40,7 @@ pub struct TrapFrame {
 // since it is necessary to save the registers related to the stack in order to tamper with the stack.
 #[naked]
 #[repr(align(4))] // Set the least significant 2 bits to 0 for mode flag.
-pub fn kernel_entry() {
+pub extern "C" fn kernel_entry() {
     // sscratch registers: registers that the kernel is free to use
     unsafe {
         asm!(

@@ -11,7 +11,7 @@
 - [x] chapter07 C std library
 - [x] chapter08 kernel panic
 - [x] chapter09 exception
-- [ ] chapter10 allocate memory
+- [x] chapter10 allocate memory
 - [ ] chapter11 process
 - [ ] chapter12 page table
 - [ ] chapter13 application

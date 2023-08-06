@@ -4,12 +4,15 @@
 #![feature(asm_const)]
 #![feature(fn_align)]
 #![feature(panic_info_message)]
+pub mod pages;
 pub mod trap;
 
 use core::{arch::asm, panic::PanicInfo};
 
 use kernel::{println, riscv::stvec};
 use trap::kernel_entry;
+
+use crate::pages::alloc_pages;
 
 // Defined symbols by kernel.ld
 extern "C" {
@@ -33,8 +36,14 @@ fn kernel_main() {
     println!("Hello World!");
     unsafe {
         stvec::write(kernel_entry as usize, stvec::TrapMode::Direct);
-        asm!("unimp");
     }
+
+    let paddr0 = alloc_pages(2);
+    let paddr1 = alloc_pages(1);
+    println!("alloc_pages test: {}", paddr0);
+    println!("alloc_pages test: {}", paddr1);
+
+    panic!("booted!");
 }
 
 #[link_section = ".text.boot"]

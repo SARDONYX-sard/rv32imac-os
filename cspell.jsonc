@@ -1,12 +1,15 @@
 {
   "words": [
     "addi",
+    "alloc",
     "csrr",
     "csrw",
     "ecall",
     "getchar",
     "inlateout",
     "noreturn",
+    "paddr",
+    "physaddr",
     "putchar",
     "readfile",
     "repr",
