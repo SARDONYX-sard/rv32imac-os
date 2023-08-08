@@ -6,4 +6,4 @@ run:
 
 .PHONY: disasm-vim
 disasm-vim:
-		cargo disasm > /tmp/os-disasm.txt;vim /tmp/os-disasm.txt;rm /tmp/os-disasm.txt
+		cargo dmp > ./dump.txt
