@@ -1,5 +1,8 @@
 use core::arch::asm;
-use kernel::riscv::{Scause, Sepc, Stval};
+use kernel::riscv::{
+    scause::{self, Scause},
+    Sepc, Stval,
+};
 
 #[repr(C)]
 pub struct TrapFrame {
@@ -36,23 +39,25 @@ pub struct TrapFrame {
     sp: usize,
 }
 
-// To prevent unnecessary generation of asm code by using the "naked" attribute,
-// since it is necessary to save the registers related to the stack in order to tamper with the stack.
-#[naked]
+/// Save register & jump to trap(Systemcall, interrupt, etc.) event handler.
+#[naked] // Use this attribute to manually control the stack so that no extra code is output.
 #[repr(align(4))] // Set the least significant 2 bits to 0 for mode flag.
 pub extern "C" fn kernel_entry() {
     // sscratch registers: registers that the kernel is free to use
     unsafe {
         asm!(
-            "csrw sscratch, sp",
-            // - Why 4byte? => 32bit RISC-V(RV32). 32bit == 4byte register
-            //
+            // Extract the kernel stack of the running process from sscratch
+            "csrrw sp, sscratch, sp", // atomic swap sscratch <-> sp
+
+            // - Why multiply 4byte? => 32bit RISC-V(RV32). 32bit == 4byte register
             // - This OS also uses an addition instruction,
             //   although the stack grows in the direction of smaller addresses.
             //   However, since the immediate value being added is negative,
             //   it eventually grows to a smaller address as usual.
-            "addi sp, sp, -4 * 31",
-            "sw ra,  4 * 0(sp)", // Memory[sp + 0 * 4] = ra
+
+            // --- create TrapFrame array
+            "addi sp, sp, -4 * 31", // allocate stack
+            "sw ra,  4 * 0(sp)",    // Memory[sp + 0 * 4] = ra
             "sw gp,  4 * 1(sp)",
             // temporary registers
             "sw tp,  4 * 2(sp)",
@@ -72,7 +77,7 @@ pub extern "C" fn kernel_entry() {
             "sw a5,  4 * 15(sp)",
             "sw a6,  4 * 16(sp)",
             "sw a7,  4 * 17(sp)",
-            //
+            // callee saved registers
             "sw s0,  4 * 18(sp)",
             "sw s1,  4 * 19(sp)",
             "sw s2,  4 * 20(sp)",
@@ -85,10 +90,17 @@ pub extern "C" fn kernel_entry() {
             "sw s9,  4 * 27(sp)",
             "sw s10, 4 * 28(sp)",
             "sw s11, 4 * 29(sp)",
-            "csrr a0, sscratch",
-            "sw a0, 4 * 30(sp)",
-            "mv a0, sp",
+
+            "csrr a0, sscratch", // a0 = sscratch: exception occurred sp to a0
+            "sw a0, 4 * 30(sp)", // Trapframe sp field = a0
+
+            "addi a0, sp, 4 * 31", // a0 = stack start address
+            "csrw sscratch, a0", // sscratch = stack start address
+            // --- create TrapFrame array end
+
+            "mv a0, sp", // a0 = stack current address
             "call {trap_handler}",
+
             "lw ra,  4 * 0(sp)",
             "lw gp,  4 * 1(sp)",
             "lw tp,  4 * 2(sp)",
@@ -129,12 +141,12 @@ pub extern "C" fn kernel_entry() {
 
 #[no_mangle]
 fn handle_trap(_f: TrapFrame) {
-    let scause = unsafe { Scause::read() };
+    let scause: Scause = unsafe { scause::read() }.into();
     let stval = unsafe { Stval::read() };
     let user_pc = unsafe { Sepc::read() };
 
     panic!(
-        "unexpected trap scause={:x}, stval={:x}, sepc={:x}",
+        "unexpected trap scause={:?}, stval={:x}, sepc={:x}",
         scause, stval, user_pc,
     );
 }

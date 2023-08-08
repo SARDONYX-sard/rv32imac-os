@@ -1,9 +1,90 @@
 use core::arch::asm;
 
-#[derive(Copy, Clone, Debug)]
-pub struct Scause(usize);
+/// - see instruction explation(https://github.com/riscv-non-isa/riscv-asm-manual/blob/master/riscv-asm.md#instruction-aliases)
+pub fn raise_exception() {
+    unsafe { asm!("unimp") }
+}
 
-impl Scause {
+pub mod scause {
+    use core::arch::asm;
+
+    /// Human Readable scause
+    /// - see [Scause 4.1.9](https://people.eecs.berkeley.edu/~krste/papers/riscv-privileged-v1.9.pdf)
+    #[derive(Debug)]
+    pub enum Scause {
+        Interrupt(Interrupt),
+        Exception(Exception),
+    }
+
+    impl From<usize> for Scause {
+        fn from(value: usize) -> Self {
+            // We want to check if the most significant bit (32nd bit if 32 bits), which is the interrupt flag, is 1.
+            let is_interrupt = (value & 1 >> (core::mem::size_of::<usize>() - 1)) == 1;
+            match is_interrupt {
+                true => Scause::Interrupt(Interrupt::try_from(value).unwrap_or_default()),
+                false => Scause::Exception(Exception::try_from(value).unwrap_or_default()),
+            }
+        }
+    }
+
+    #[derive(Debug, Default)]
+    pub enum Interrupt {
+        UserSoftware,
+        SupervisorSoftware,
+        UserTimer,
+        SupervisorTimer,
+        #[default]
+        Unknown,
+    }
+
+    impl TryFrom<usize> for Interrupt {
+        type Error = Interrupt;
+        fn try_from(value: usize) -> Result<Self, Self::Error> {
+            // Clears the most significant bit (interrupt flag) to convert to enum in match expression.
+            let value = value & (1 << (core::mem::size_of::<usize>() - 1));
+            Ok(match value {
+                0 => Interrupt::UserSoftware,
+                1 => Interrupt::SupervisorSoftware,
+                4 => Interrupt::UserTimer,
+                5 => Interrupt::SupervisorTimer,
+                _ => return Err(Interrupt::Unknown),
+            })
+        }
+    }
+
+    #[derive(Debug, Default)]
+    pub enum Exception {
+        InstructionAddressMisaligned,
+        InstructionAccessFault,
+        IllegalInstruction,
+        Breakpoint,
+        LoadAccessFault,
+        /// AMO(Atomic memory operation)
+        AmoAddressMisaligned,
+        /// Store AMO(Atomic memory operation) fault
+        StoreAmoAccessFault,
+        EnvironmentCall,
+        #[default]
+        Unknown,
+    }
+
+    impl TryFrom<usize> for Exception {
+        type Error = Exception;
+        fn try_from(value: usize) -> Result<Self, Self::Error> {
+            Ok(match value {
+                0 => Exception::InstructionAddressMisaligned,
+                1 => Exception::InstructionAccessFault,
+                2 => Exception::IllegalInstruction,
+                3 => Exception::Breakpoint,
+                5 => Exception::LoadAccessFault,
+                6 => Exception::AmoAddressMisaligned,
+                7 => Exception::StoreAmoAccessFault,
+                8 => Exception::EnvironmentCall,
+                _ => return Err(Exception::Unknown),
+            })
+        }
+    }
+
     #[inline]
     pub unsafe fn read() -> usize {
         let value: usize;
