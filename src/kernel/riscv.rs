@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 use core::arch::asm;
 
 /// - see instruction explation(https://github.com/riscv-non-isa/riscv-asm-manual/blob/master/riscv-asm.md#instruction-aliases)

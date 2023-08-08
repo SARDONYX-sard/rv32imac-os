@@ -3,6 +3,8 @@ use core::{
     sync::atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 
+use crate::pages::{alloc_pages, ident_map_in_kernel, PAGE_SIZE, SATP_SV32};
+
 // const PROCS_MAX: usize = 8;
 const PROCS_MAX: usize = 3;
 // const PROC_STACK_LEN: usize = 4096;
@@ -36,11 +38,15 @@ impl Default for Executer {
 impl Executer {
     /// Init proc queue.
     pub fn new() -> Self {
+            let root_ppn = alloc_pages(1).into();
+            ident_map_in_kernel(root_ppn);
+
         Self {
             procs: [
                 Process {
                     pid: 0,
                     state: ProcState::Running,
+                    page_table:root_ppn,
                     ..Default::default()
                 },
                 Process::new(1),
@@ -73,6 +79,10 @@ impl Executer {
             unused_proc.ctx.ra = recycle_and_run_next as usize;
             unused_proc.ctx.current_pc = task_ptr as usize;
             unused_proc.ctx.sp = stack_start_ptr.sub(32) as usize;
+
+            let root_ppn = alloc_pages(1).into();
+            ident_map_in_kernel(root_ppn);
+            unused_proc.page_table = root_ppn;
         }
         unused_proc.state = ProcState::Runnable;
     }
@@ -120,6 +130,7 @@ impl Executer {
         self.running_proc_idx = next_idx;
 
         // 3. As you can see
+        self.procs[next_idx].set_satp();
         unsafe { switch_context(&mut self.procs[prev].ctx, &self.procs[next_idx].ctx) };
         // NOTE!: The process with pid 0 does nothing and returns to the address after the context switch.
         true
@@ -149,7 +160,7 @@ pub struct Process {
     #[allow(unused)]
     pid: usize,
     state: ProcState,
-    #[allow(unused)]
+    /// root ppn to pageTable
     page_table: usize,
     /// ## This stack starts the last index as usual.
     ///
@@ -179,9 +190,24 @@ impl Process {
         Self {
             pid,
             state: ProcState::Unused,
-            page_table: 1,
+            page_table: 0,
             stack: [0; PROC_STACK_LEN],
             ctx: ProcContext::new(),
+        }
+    }
+
+    /// set and enable virtual addressing mode, save sp to sscratch
+    fn set_satp(&self) {
+        unsafe {
+            asm!("
+                sfence.vma
+                csrw satp, {}
+                csrw sscratch,{}
+            ",
+            in(reg) (SATP_SV32 | (self.page_table / PAGE_SIZE)),
+            in(reg) (self.ctx.sp),
+            options(nomem)
+            )
         }
     }
 }

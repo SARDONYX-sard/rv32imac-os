@@ -17,8 +17,10 @@
     "readfile",
     "repr",
     "riscv",
+    "SATP",
     "scause",
     "Sepc",
+    "sfence",
     "sret",
     "sscratch",
     "stval",
@@ -26,6 +28,7 @@
     "syscall",
     "sysno",
     "unimp",
+    "vaddr",
     "Virt",
     "writefile"
   ]
