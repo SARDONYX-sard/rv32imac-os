@@ -18,5 +18,10 @@ qemu-system-riscv32 -machine virt -bios default -nographic -serial mon:stdio --n
 # """
 
 [alias]
-disasm = "objdump --bin os --release -- -d"
-sym = "nm --bin os"                         # show symbol mapping address
+# -r is release
+# Dump disassemble
+dmp = "objdump --bin os -- -d"
+dmp-r = "objdump --bin os --release -- -d"
+# Show symbol mapping address
+sym = "nm --bin os"
+sym-r = "nm --bin os --release"

@@ -46,6 +46,7 @@
     "MD033": false,
     "no-hard-tabs": false
   },
+  "rust-analyzer.cargo.target": "riscv32imac-unknown-none-elf",
   "rust-analyzer.check.allTargets": false,
   "rust-analyzer.check.command": "clippy",
   "rust-analyzer.imports.prefer.no.std": true,
