@@ -1,13 +1,17 @@
 #![no_std]
 #![no_main]
+#![feature(alloc_error_handler)]
 #![feature(asm_const)]
+#![feature(const_trait_impl)]
 #![feature(fn_align)]
 #![feature(naked_functions)]
 #![feature(panic_info_message)]
+pub mod allocator;
 pub mod pages;
 pub mod proc;
 pub mod trap;
 
+extern crate alloc;
 use crate::{
     proc::{run_next_proc, Executer},
     trap::kernel_entry,
@@ -75,7 +79,6 @@ pub extern "C" fn boot() {
     }
 }
 
-/// NOTE: info is not used yet because println!
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     match info.location() {
