@@ -13,12 +13,20 @@
 - [x] chapter09 exception
 - [x] chapter10 allocate memory
 - [x] chapter11 process
-- [ ] chapter12 page table
+- [x] chapter12 page table
 - [ ] chapter13 application
 - [ ] chapter14 user mode
 - [ ] chapter15 system call
 - [ ] chapter16 Read/Write disk
 - [ ] chapter17 file system
+
+## How to run
+
+- docker
+- VSCode(Option)
+
+1. build container(docker compose)
+2. cargo run
 
 ## References
 
