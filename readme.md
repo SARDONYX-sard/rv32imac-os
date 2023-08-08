@@ -12,7 +12,7 @@
 - [x] chapter08 kernel panic
 - [x] chapter09 exception
 - [x] chapter10 allocate memory
-- [ ] chapter11 process
+- [x] chapter11 process
 - [ ] chapter12 page table
 - [ ] chapter13 application
 - [ ] chapter14 user mode
