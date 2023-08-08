@@ -1,18 +1,19 @@
 #![no_std]
 #![no_main]
-#![feature(naked_functions)]
 #![feature(asm_const)]
 #![feature(fn_align)]
+#![feature(naked_functions)]
 #![feature(panic_info_message)]
 pub mod pages;
+pub mod proc;
 pub mod trap;
 
+use crate::{
+    proc::{run_next_proc, Executer},
+    trap::kernel_entry,
+};
 use core::{arch::asm, panic::PanicInfo};
-
-use kernel::{println, riscv::stvec};
-use trap::kernel_entry;
-
-use crate::pages::alloc_pages;
+use kernel::{print, println, riscv::stvec};
 
 // Defined symbols by kernel.ld
 extern "C" {
@@ -33,17 +34,30 @@ fn clear_bss() {
 
 fn kernel_main() {
     clear_bss();
-    println!("Hello World!");
-    unsafe {
-        stvec::write(kernel_entry as usize, stvec::TrapMode::Direct);
-    }
+    unsafe { stvec::write(kernel_entry as usize, stvec::TrapMode::Direct) };
 
-    let paddr0 = alloc_pages(2);
-    let paddr1 = alloc_pages(1);
-    println!("alloc_pages test: {}", paddr0);
-    println!("alloc_pages test: {}", paddr1);
-
-    panic!("booted!");
+    let mut proc_runner = Executer::new();
+    proc_runner.push(|| {
+        println!("starting process. A");
+        let mut i = 0;
+        while i <= 10 {
+            print!("A");
+            run_next_proc();
+            i += 1;
+        }
+    });
+    proc_runner.push(|| {
+        println!("starting process. B");
+        let mut i = 0;
+        while i <= 10 {
+            print!("B");
+            run_next_proc();
+            i += 1;
+        }
+    });
+    proc_runner.run();
+    println!("");
+    panic!("booted!")
 }
 
 #[link_section = ".text.boot"]
