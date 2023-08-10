@@ -38,15 +38,15 @@ impl Default for Executer {
 impl Executer {
     /// Init proc queue.
     pub fn new() -> Self {
-            let root_ppn = alloc_pages(1).into();
-            ident_map_in_kernel(root_ppn);
+        let root_ppn = alloc_pages(1).into();
+        ident_map_in_kernel(root_ppn);
 
         Self {
             procs: [
                 Process {
                     pid: 0,
                     state: ProcState::Running,
-                    page_table:root_ppn,
+                    page_table: root_ppn,
                     ..Default::default()
                 },
                 Process::new(1),
@@ -90,9 +90,12 @@ impl Executer {
     /// Execute the pushed tasks in order.
     pub fn run(&mut self) {
         // Set once RUNNER ptr.
-        if !IS_SET_RUNNER.load(Ordering::Acquire) {
-            PROC_RUNNER_PTR.store(self as *const Executer as usize, Ordering::Release);
-            IS_SET_RUNNER.store(false, Ordering::Release);
+        match !IS_SET_RUNNER.load(Ordering::Acquire) {
+            true => {
+                PROC_RUNNER_PTR.store(self as *const Executer as usize, Ordering::Release);
+                IS_SET_RUNNER.store(true, Ordering::Release);
+            }
+            false => panic!("Only one Executer can exist."),
         }
         while self.run_next() {}
     }
