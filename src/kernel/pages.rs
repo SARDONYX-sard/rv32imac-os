@@ -78,6 +78,9 @@ impl PageTableEntry {
 /// - vaddr: Virtual address
 /// - paddr: Physical address
 /// - flags: Page table entry flags
+///
+/// # Panics
+/// - vaddr & paddr must be aligned to PAGE_SIZE(default: 4096)
 fn map_page(root_ppn: PhysAddr, vaddr: VirtAddr, paddr: PhysAddr, flags: usize) {
     let page_table_ptr: usize = root_ppn.into();
     let vaddr: usize = vaddr.into();
@@ -112,5 +115,69 @@ pub fn ident_map_in_kernel(root_ppn: usize) {
             PAGE_R | PAGE_W | PAGE_X,
         );
         paddr += PAGE_SIZE
+    }
+}
+
+const MAX_APP_NUM: usize = 16;
+/// USER Application start address
+pub const USER_BASE: usize = 0x1000000;
+
+/// Get .text section in kernel application address list.
+pub fn get_user_app_list() -> [(usize, usize); MAX_APP_NUM] {
+    extern "C" {
+        fn _num_app();
+    }
+    // Expected that following tuple array.
+    //  (.word app_0_start ptr, .word app_0_end ptr)
+    let mut apps_ptr_list: [(usize, usize); MAX_APP_NUM] = [(0, 0); MAX_APP_NUM];
+    let num_app_ptr = _num_app as usize as *const usize;
+
+    // start app_0_start ptr
+    let mut app_n_ptr = num_app_ptr;
+    // read_volatile: read ptr content
+    // _num_app:
+    //       .word 1 <- I want to get this value.
+    let num_app = unsafe { num_app_ptr.read_volatile() };
+    for app_n in apps_ptr_list.iter_mut().take(num_app) {
+        let app_n_start_ptr = unsafe {
+            app_n_ptr = app_n_ptr.add(1);
+            app_n_ptr.read_volatile()
+        };
+        let app_n_end_ptr = unsafe {
+            app_n_ptr = app_n_ptr.add(1);
+            app_n_ptr.read_volatile()
+        };
+        *app_n = (app_n_start_ptr, app_n_end_ptr);
+    }
+
+    apps_ptr_list
+}
+
+/// Allocate page with user-authorized apps.
+///
+/// # Parameters
+/// - root_ppn: proc root node(satp)
+/// - app_start(end)_ptr: phys addr in kernel text section app ptr
+pub fn map_one_app(root_ppn: usize, app_start_ptr: usize, app_end_ptr: usize) {
+    let app_size = app_end_ptr - app_start_ptr;
+    // each page offset index
+    let mut offset = 0;
+    while offset < app_size {
+        let page: usize = alloc_pages(1).into();
+        // Copy the user application embedded in the text section of the kernel to the page allocated on a page-by-page basis
+        unsafe {
+            let app_dst = core::slice::from_raw_parts_mut(page as *mut u8, PAGE_SIZE);
+            let app_src =
+                core::slice::from_raw_parts((app_start_ptr + offset) as *const u8, PAGE_SIZE);
+            app_dst.copy_from_slice(app_src);
+        }
+        // Associate USER_BASE (base address of virtual address) with the allocated page
+        map_page(
+            root_ppn.into(),
+            (USER_BASE + offset).into(),
+            page.into(),
+            PAGE_U | PAGE_R | PAGE_W | PAGE_X,
+        );
+        offset += PAGE_SIZE
     }
 }

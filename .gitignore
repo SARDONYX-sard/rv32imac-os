@@ -1,6 +1,7 @@
 /disk/*
 !/disk/.gitkeep
 dump.txt
+link_app.S
 **/target/
 *.map
 *.tar

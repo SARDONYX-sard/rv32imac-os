@@ -1,7 +1,8 @@
+use crate::pages::USER_BASE;
 use core::arch::asm;
 use kernel::riscv::{
     scause::{self, Scause},
-    Sepc, Stval,
+    sepc, Stval,
 };
 
 #[repr(C)]
@@ -37,6 +38,22 @@ pub struct TrapFrame {
     s10: usize,
     s11: usize,
     sp: usize,
+}
+
+const SSTATUS_SPIE: usize = 1 << 5;
+
+#[repr(align(4))]
+pub extern "C" fn user_entry() {
+    unsafe {
+        // - Set the program counter when entering U-Mode
+        asm!("csrw sepc, {}",
+        // - Set the SPIE bit in sstatus to 1 so that interrupts are enabled when entering U-Mode and the handler set in the stvec register is called in the same way as exceptions.
+        "csrw sstatus, {}",
+        "sret",
+        in(reg)USER_BASE,
+        in(reg)SSTATUS_SPIE,
+        options(noreturn));
+    }
 }
 
 /// Save register & jump to trap(Systemcall, interrupt, etc.) event handler.
@@ -143,7 +160,7 @@ pub extern "C" fn kernel_entry() {
 fn handle_trap(_f: TrapFrame) {
     let scause: Scause = unsafe { scause::read() }.into();
     let stval = unsafe { Stval::read() };
-    let user_pc = unsafe { Sepc::read() };
+    let user_pc = unsafe { sepc::read() };
 
     panic!(
         "unexpected trap scause={:?}, stval={:x}, sepc={:x}",

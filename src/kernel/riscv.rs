@@ -66,6 +66,9 @@ pub mod scause {
         /// Store AMO(Atomic memory operation) fault
         StoreAmoAccessFault,
         EnvironmentCall,
+        InstructionPageFault,
+        LoadpageFault,
+        StoreAmoPageFault,
         #[default]
         Unknown,
     }
@@ -82,6 +85,9 @@ pub mod scause {
                 6 => Exception::AmoAddressMisaligned,
                 7 => Exception::StoreAmoAccessFault,
                 8 => Exception::EnvironmentCall,
+                12 => Exception::InstructionPageFault,
+                13 => Exception::LoadpageFault,
+                15 => Exception::StoreAmoPageFault,
                 _ => return Err(Exception::Unknown),
             })
         }
@@ -117,10 +123,9 @@ impl Stval {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Sepc(usize);
+pub mod sepc {
+    use core::arch::asm;
 
-impl Sepc {
     #[inline]
     pub unsafe fn read() -> usize {
         let value: usize;
@@ -146,5 +151,21 @@ pub mod stvec {
     #[inline]
     pub unsafe fn write(addr: usize, mode: TrapMode) {
         asm!("csrw stvec, {}", in(reg) addr | mode as usize);
+    }
+}
+
+pub mod sstatus {
+    use core::arch::asm;
+
+    #[inline]
+    pub unsafe fn read() -> usize {
+        let mut value;
+        asm!("csrr {}, sstatus", out(reg) value);
+        value
+    }
+
+    #[inline]
+    pub unsafe fn write(value: usize) {
+        asm!("csrw sstatus, {}", in(reg) value);
     }
 }
