@@ -9,7 +9,7 @@ path = "src/kernel/main.rs"
 
 [workspace]
 package.version = "0.1.0"
-members = ["src/kernel"]
+members = ["src/kernel", "src/user"]
 
 [workspace.dependencies]
 # NOTE: The name of the pakage must be the name given in src/kernel/Cargo.toml
