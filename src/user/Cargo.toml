@@ -1,0 +1,13 @@
+[package]
+name = "OS1000lineUser"
+description = "1000line OS user library"
+edition = "2021"
+version.workspace = true
+
+[lib]
+name = "user_lib"
+path = "lib.rs"
+
+[[bin]]
+name = "_shell"
+path = "bin/_shell.rs"
