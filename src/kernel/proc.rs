@@ -3,7 +3,7 @@ use core::{
     sync::atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 
-use crate::pages::{alloc_pages, ident_map_in_kernel, PAGE_SIZE, SATP_SV32};
+use crate::pages::{alloc_pages, ident_map_in_kernel, map_one_app, PAGE_SIZE, SATP_SV32};
 
 // const PROCS_MAX: usize = 8;
 const PROCS_MAX: usize = 3;
@@ -62,7 +62,7 @@ impl Executer {
     }
 
     /// Push task to task queue.
-    pub fn push(&mut self, task_ptr: fn()) {
+    pub fn push(&mut self, app_range: (usize, usize)) {
         let unused_proc = self
             .procs
             .iter_mut()
@@ -75,13 +75,13 @@ impl Executer {
             // Allocate more until the 8-byte alignment requirement is met. (by ABI)
             // Using the fact that multiplying by 8 is equivalent to meaning that all bits of 8-1 will be 0.
             let stack_start_ptr = (stack_start_ptr as usize & !(8 - 1)) as *mut u8;
-            // unused_proc.ctx.ra = recycle_and_run_next as usize;
             unused_proc.ctx.ra = recycle_and_run_next as usize;
-            unused_proc.ctx.current_pc = task_ptr as usize;
+            unused_proc.ctx.current_pc = crate::trap::user_entry as usize;
             unused_proc.ctx.sp = stack_start_ptr.sub(32) as usize;
 
             let root_ppn = alloc_pages(1).into();
-            ident_map_in_kernel(root_ppn);
+            ident_map_in_kernel(root_ppn); // All the same kernel code is assigned to the virtual address of each process.
+            map_one_app(root_ppn, app_range.0, app_range.1);
             unused_proc.page_table = root_ppn;
         }
         unused_proc.state = ProcState::Runnable;
