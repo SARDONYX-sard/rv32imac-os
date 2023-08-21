@@ -2,7 +2,7 @@ default: run
 
 .PHONY: run
 run:
-		cargo run
+		@cargo clean;cargo run
 
 .PHONY: disasm-vim
 disasm-vim:
@@ -10,4 +10,4 @@ disasm-vim:
 
 .PHONY: shell-dump
 shell-dump:
-		rust-objdump ./target/riscv32imac-unknown-none-elf/release/_shell --disassemble-all --arch-name=riscv32
+		rust-objdump ./target/riscv32imac-unknown-none-elf/release/_shell --disassemble-all --arch-name=riscv32 > dump-shell.txt
