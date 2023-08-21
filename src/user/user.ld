@@ -23,6 +23,7 @@ SECTIONS {
         . += 64 * 1024; /* 64KB */
         __stack_top = .;
 
-       ASSERT(. < 0x1800000, "too large executable");
+        ASSERT(. < 0x1800000, "too large executable");
     }
+    .eh_frame : { KEEP(*(.eh_frame)) *(.eh_frame.*) }
 }
