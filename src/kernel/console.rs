@@ -1,7 +1,7 @@
 use crate::sbi::sbi_call;
 use core::fmt::{self, Write};
 
-fn put_char(ch: usize) {
+pub fn put_char(ch: usize) {
     sbi_call([ch, 0, 0, 0, 0, 0, 0, 1]);
 }
 
@@ -32,4 +32,9 @@ macro_rules! println {
     ($fmt: literal $(, $($arg: tt)+)?) => {
         $crate::console::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?))
     }
+}
+
+pub fn get_char() -> isize {
+    let ret = sbi_call([0, 0, 0, 0, 0, 0, 0, 2]);
+    ret.error
 }

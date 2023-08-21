@@ -1,9 +1,9 @@
 use core::arch::asm;
 
-#[allow(unused)]
-pub(crate) struct SbiRet {
-    error: usize,
-    value: usize,
+#[derive(Debug)]
+pub struct SbiRet {
+    pub error: isize,
+    pub value: usize,
 }
 
 #[inline(always)]

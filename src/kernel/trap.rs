@@ -1,9 +1,12 @@
+use crate::console::{get_char, put_char};
 use crate::pages::USER_BASE;
+use crate::proc::{recycle_and_run_next, run_next_proc};
 use core::arch::asm;
 use kernel::riscv::{
     scause::{self, Scause},
     sepc, Stval,
 };
+use kernel::syscall_num::{SYS_EXIT, SYS_GETCHAR, SYS_PUTCHAR};
 
 #[repr(C)]
 pub struct TrapFrame {
@@ -42,16 +45,25 @@ pub struct TrapFrame {
 
 const SSTATUS_SPIE: usize = 1 << 5;
 
+#[naked]
 #[repr(align(4))]
 pub extern "C" fn user_entry() {
     unsafe {
         // - Set the program counter when entering U-Mode
-        asm!("csrw sepc, {}",
+        asm!(
+        "addi sp, sp, -4 * 1",
+        "sw t0, 4 * 0(sp)",
+
+        "li  t0, {}",
+        "csrw sepc, t0",
         // - Set the SPIE bit in sstatus to 1 so that interrupts are enabled when entering U-Mode and the handler set in the stvec register is called in the same way as exceptions.
-        "csrw sstatus, {}",
+        "csrwi sstatus, {}",
+
+        "lw t0,  4 * 0(sp)",
+        "addi sp, sp, 4 * 1",
         "sret",
-        in(reg)USER_BASE,
-        in(reg)SSTATUS_SPIE,
+        const USER_BASE,
+        const SSTATUS_SPIE - 1,
         options(noreturn));
     }
 }
@@ -157,13 +169,36 @@ pub extern "C" fn kernel_entry() {
 }
 
 #[no_mangle]
-fn handle_trap(_f: TrapFrame) {
+fn handle_trap(f: TrapFrame) {
     let scause: Scause = unsafe { scause::read() }.into();
     let stval = unsafe { Stval::read() };
-    let user_pc = unsafe { sepc::read() };
+    let mut user_pc = unsafe { sepc::read() };
 
-    panic!(
-        "unexpected trap scause={:?}, stval={:x}, sepc={:x}",
-        scause, stval, user_pc,
-    );
+    match scause {
+        Scause::Exception(scause::Exception::EnvironmentCall) => {
+            handle_syscall(f);
+            // Add the size of the instruction (4 bytes) to resume execution
+            // from the next instruction when returning to user mode.
+            // NOTE: If sepc is not changed, ecall repeats indefinitely.
+            user_pc += core::mem::size_of::<usize>();
+        }
+        _ => panic!("unexpected trap scause={scause:?}, stval={stval:x}, sepc={user_pc:x}"),
+    };
+    unsafe { sepc::write(user_pc) };
+}
+
+fn handle_syscall(mut f: TrapFrame) {
+    match f.a3 {
+        SYS_PUTCHAR => put_char(f.a0),
+        SYS_GETCHAR => loop {
+            let ch = get_char();
+            if ch >= 0 {
+                f.a0 = ch as usize;
+                break;
+            }
+            run_next_proc();
+        },
+        SYS_EXIT => recycle_and_run_next(),
+        _ => panic!("unexpected syscall a3={:x}", f.a3),
+    };
 }
