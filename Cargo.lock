@@ -12,6 +12,9 @@ dependencies = [
 [[package]]
 name = "OS1000lineUser"
 version = "0.1.0"
+dependencies = [
+ "os_1000line_kernel",
+]
 
 [[package]]
 name = "os_1000line_kernel"
