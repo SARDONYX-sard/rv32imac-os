@@ -3,22 +3,35 @@ use core::{
     sync::atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 
-use crate::pages::{alloc_pages, ident_map_in_kernel, map_one_app, PAGE_SIZE, SATP_SV32};
+use crate::{
+    pages::{alloc_pages, ident_map_in_kernel, map_one_app, PAGE_SIZE, SATP_SV32},
+    println,
+};
 
 // const PROCS_MAX: usize = 8;
 const PROCS_MAX: usize = 3;
-// const PROC_STACK_LEN: usize = 4096;
-const PROC_STACK_LEN: usize = 4096 / 2;
+/// NOTE: Characters entered into the shell are placed on a stack; if the stack is insufficient, an InstructionPageFault occurs.
+const PROC_STACK_LEN: usize = 4096 * 2;
 static IS_SET_RUNNER: AtomicBool = AtomicBool::new(false);
 static PROC_RUNNER_PTR: AtomicUsize = AtomicUsize::new(0);
+
+#[inline]
+fn check_init_runner() {
+    assert!(
+        IS_SET_RUNNER.load(Ordering::Acquire),
+        "Executer must be running."
+    );
+}
 
 /// Exists only to obtain the return execution address of the context switch
 /// and register it in the `return argument` register.
 /// (exclude 0 pid)
-fn recycle_and_run_next() {
+pub fn recycle_and_run_next() {
+    check_init_runner();
     unsafe { (*Executer::as_mut_ptr()).t_return() };
 }
 pub fn run_next_proc() {
+    check_init_runner();
     unsafe { (*Executer::as_mut_ptr()).run_next() };
 }
 
@@ -105,6 +118,7 @@ impl Executer {
     pub(self) fn t_return(&mut self) {
         if self.running_proc_idx != 0 {
             self.procs[self.running_proc_idx].state = ProcState::Unused;
+            println!("process {} exit", self.running_proc_idx);
             self.run_next();
         }
     }

@@ -7,14 +7,16 @@
 #![feature(naked_functions)]
 #![feature(panic_info_message)]
 pub mod allocator;
+pub mod console;
 pub mod pages;
 pub mod proc;
+pub mod sbi;
 pub mod trap;
 
 extern crate alloc;
 use crate::{proc::Executer, trap::kernel_entry};
 use core::{arch::asm, panic::PanicInfo};
-use kernel::{println, riscv::stvec};
+use kernel::riscv::stvec;
 
 // Defined symbols by kernel.ld
 extern "C" {
@@ -47,6 +49,7 @@ fn kernel_main() {
         }
     }
     proc_runner.run();
+    panic!("task all complete!");
 }
 
 #[link_section = ".text.boot"]

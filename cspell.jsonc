@@ -5,6 +5,7 @@
     "csrr",
     "csrrw",
     "csrw",
+    "csrwi",
     "ecall",
     "getchar",
     "inlateout",

@@ -1,6 +1,5 @@
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use kernel::addr::VirtAddr;
-use kernel::addr::{is_aligned, PhysAddr};
+use kernel::addr::{is_aligned, PhysAddr, PhysPageNum, VirtAddr};
 
 extern "C" {
     /// defined by kernel.ld
@@ -84,17 +83,19 @@ impl PageTableEntry {
 fn map_page(root_ppn: PhysAddr, vaddr: VirtAddr, paddr: PhysAddr, flags: usize) {
     let page_table_ptr: usize = root_ppn.into();
     let vaddr: usize = vaddr.into();
-    let paddr: usize = paddr.into();
     assert!(is_aligned(vaddr, PAGE_SIZE), "unaligned vaddr {vaddr:x}");
-    assert!(is_aligned(paddr, PAGE_SIZE), "unaligned paddr {paddr:x}");
+    assert!(
+        is_aligned(usize::from(paddr), PAGE_SIZE),
+        "unaligned paddr {paddr}"
+    );
 
     let table1 = unsafe {
         core::slice::from_raw_parts_mut(page_table_ptr as *mut PageTableEntry, PAGE_TABLE_LEN)
     };
     let vpn1 = (vaddr >> 22) & (PAGE_TABLE_LEN - 1); // usize bit - (VPN[0](10) + offset(12)) = 10bit
     if !table1[vpn1].is_valid() {
-        let pt_paddr: usize = alloc_pages(1).into();
-        table1[vpn1] = PageTableEntry((pt_paddr / PAGE_SIZE) << 10 | PAGE_V);
+        let pt_paddr: PhysPageNum = alloc_pages(1).into();
+        table1[vpn1] = PageTableEntry(usize::from(pt_paddr) << 10 | PAGE_V);
     }
 
     let table0_ptr = (table1[vpn1].0 >> 10) * PAGE_SIZE;
@@ -102,7 +103,7 @@ fn map_page(root_ppn: PhysAddr, vaddr: VirtAddr, paddr: PhysAddr, flags: usize) 
     let table0 = unsafe {
         core::slice::from_raw_parts_mut(table0_ptr as *mut PageTableEntry, PAGE_TABLE_LEN)
     };
-    table0[vpn0] = PageTableEntry(((paddr / PAGE_SIZE) << 10) | flags | PAGE_V);
+    table0[vpn0] = PageTableEntry(((usize::from(PhysPageNum::from(paddr))) << 10) | flags | PAGE_V);
 }
 
 pub fn ident_map_in_kernel(root_ppn: usize) {
